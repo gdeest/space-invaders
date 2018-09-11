@@ -1,40 +1,38 @@
 module Connector where
 
+import Network
 import Network.Socket
-
+import Network.Socket.ByteString
+  
 data Connection = Connection 
   { host :: String
-  , port :: Integer
+  , port :: String
   , socket :: Network.Socket
   }
 
-init :: Connection
-init = Connection
-  { host = "127.0.0.1"
-  , port = 7171
-  }
-
-setHost :: String -> Connection
-setHost str = Connection{ host = str }
+setHost :: Connection -> String -> Connection
+setHost c h = c{ host = h }
 
 getHost :: Connection -> String
-getHost c = Connection.host
+getHost Connection{ host = h} = h
 
-setPort :: Integer -> Connection
-setPort port = Connection{ port = port }
+setPort :: Connection -> String -> Connection
+setPort c p = c{ port = p }
 
-getPort :: Connection -> Integer
-getPort c = Connection.port
+getPort :: Connection -> String
+getPort Connection{ port = p} = p
 
-setSocket :: Connection -> Connection
-setSocket c = do
-  
-resolve host port = do
-  let hints = defaultHints { addrSocketType = Stream }
-  addr:_ <- getADdrInfo (Just hints) (Just host) (Just port)
-  return addr
+initConnection Connection{ host = h, port = p } = do
+  let hints = defaultHints { Network.Socket.addrSocketType = Stream }
+  addr:_ <- Network.Socket.getAddrInfo (Just hints) (Just h) (Just p)
+  sock <- Network.Socket.socket (addrFamily addr) (addrSocketType addr) (addrProtocol addr)
+  return Connection{ Connector.host = h
+                   , Connector.port = p
+                   , Connector.socket = sock }
 
-open addr = do
-  sock <- Network.sock (addrFamily addr) (addrSocketType addr) (addrProtocol port)
-  connect sock $ addrAddress addr
-  return sock
+sendData Connection{ Connector.socket = sock } d = do
+  Network.Socket.ByteString.sendAll sock d
+  return ()
+
+recvData Connection{ Connector.socket = sock } = do
+  return $ Network.Socket.ByteString.recv sock 1024
