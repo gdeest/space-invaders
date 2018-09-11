@@ -12,6 +12,7 @@ module SpaceInvaders
 import qualified Graphics.Gloss as Gloss
 import qualified Graphics.Gloss.Interface.Pure.Game as Gloss
 import Window
+import Connector
 
 -- *********************** Game state ****************************
 
@@ -21,6 +22,7 @@ data Game = Game
   , spaceship :: Position
   , monsters :: [Position]
   , mDirection :: Direction
+  , connection :: Connector.Connection
   }
 
 -- | Image library
