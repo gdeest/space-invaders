@@ -11,42 +11,21 @@ import Data.ByteString.Char8
 import Data.ByteString.Lazy
 import Data.ByteString.Lazy.Char8
   
-data Connection = Connection 
-  { host :: String
-  , port :: String
-  , socket :: Network.Socket
-  }
+init :: IO Network.Socket
+init = initConnection "localhost" "7777"
 
-setHost :: Connection -> String -> Connection
-setHost c h = c{ host = h }
-
-getHost :: Connection -> String
-getHost Connection{ host = h} = h
-
-setPort :: Connection -> String -> Connection
-setPort c p = c{ port = p }
-
-getPort :: Connection -> String
-getPort Connection{ port = p} = p
-
-init =
-  initConnection Connection{ host = "localhost", port = "7777" }
-
-initConnection Connection{ host = h, port = p } = do
+initConnection :: String -> String -> IO Network.Socket
+initConnection host port = do
   let hints = defaultHints { Network.Socket.addrSocketType = Stream }
-  addr:_ <- Network.Socket.getAddrInfo (Just hints) (Just h) (Just p)
-  sock <- Network.Socket.socket (addrFamily addr) (addrSocketType addr) (addrProtocol addr)
-  return Connection{ Connector.host = h
-                   , Connector.port = p
-                   , Connector.socket = sock }
+  addr:_ <- Network.Socket.getAddrInfo (Just hints) (Just host) (Just port)
+  s <- Network.Socket.socket (addrFamily addr) (addrSocketType addr) (addrProtocol addr)
+  connect s $ Network.Socket.addrAddress addr
+  return s
 
 toBert d = Data.ByteString.Lazy.toStrict $ Data.Binary.encode . Data.BERT.showBERT $ d
 
 fromBert d = Data.ByteString.Lazy.Char8.toStrict $ Data.Binary.decode $ d
 
-sendData Connection{ Connector.socket = sock } d = do
-    Network.Socket.ByteString.sendAll sock $ toBert d
-    return ()
+sendData sock d = Network.Socket.ByteString.sendAll sock $ toBert d
 
-recvData Connection{ Connector.socket = sock } = do
-  return $  Network.Socket.ByteString.recv sock 1024
+recvData sock = Network.Socket.ByteString.recv sock 1024

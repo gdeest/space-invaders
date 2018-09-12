@@ -5,7 +5,6 @@ module SpaceInvaders
     , renderGame
     , handleKeys
     , update
-    , sendState
       -- Re-exports.
     , module Window
     ) where
@@ -13,6 +12,7 @@ module SpaceInvaders
 import qualified Graphics.Gloss as Gloss
 import qualified Graphics.Gloss.Interface.Pure.Game as Gloss
 import Window
+import Network
 import Connector
 
 -- *********************** Game state ****************************
@@ -23,7 +23,7 @@ data Game = Game
   , spaceship :: Position
   , monsters :: [Position]
   , mDirection :: Direction
-  , connection :: IO Connector.Connection
+  , connection :: IO Network.Socket
   }
 
 -- | Image library
@@ -65,14 +65,15 @@ update
   -> Game -- ^ Current game state
   -> IO Game -- ^ Updated game state.
 -- Game playing
-update _ game = do
-  sendState game
+update second game =
+  sendState game >>
   moveMonsters game
-  return game
 
--- sendState :: Game -> IO ()
-sendState Game{ spaceship = s, monsters = m, connection = c} = do
-  return $ Connector.sendData c (s, m)
+getConnection Game{ connection = s } = s
+
+sendState state = do
+  s <- getConnection state
+  Connector.sendData s "test"
 
 move
   :: Float
