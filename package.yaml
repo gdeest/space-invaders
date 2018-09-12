@@ -25,6 +25,8 @@ dependencies:
 - network
 - socket 
 - bert 
+- bytestring
+- binary
 
 library:
   source-dirs: src

@@ -5,6 +5,7 @@ module SpaceInvaders
     , renderGame
     , handleKeys
     , update
+    , sendState
       -- Re-exports.
     , module Window
     ) where
@@ -22,7 +23,7 @@ data Game = Game
   , spaceship :: Position
   , monsters :: [Position]
   , mDirection :: Direction
-  , connection :: Connector.Connection
+  , connection :: IO Connector.Connection
   }
 
 -- | Image library
@@ -53,6 +54,7 @@ mkInitialState l = Game
   , spaceship = (0, -250)
   , monsters = generateMonstersPosition
   , mDirection = Down
+  , connection = Connector.init
   }
 
 -- *********************** Updating game ************************
@@ -61,10 +63,16 @@ mkInitialState l = Game
 update
   :: Float -- ^ Time passed since last update (in seconds)
   -> Game -- ^ Current game state
-  -> Game -- ^ Updated game state.
+  -> IO Game -- ^ Updated game state.
 -- Game playing
-update seconds game =
+update _ game = do
+  sendState game
   moveMonsters game
+  return game
+
+-- sendState :: Game -> IO ()
+sendState Game{ spaceship = s, monsters = m, connection = c} = do
+  return $ Connector.sendData c (s, m)
 
 move
   :: Float
@@ -85,12 +93,12 @@ moveSpaceship delta game = game {
 
 moveMonsters
   :: Game
-  -> Game
-moveMonsters game =
-  game {
+  -> IO Game
+moveMonsters game = do
+  return $ game {
     mDirection = if getLowestPosition (monsters game) < -200 then Up else (mDirection game)
     , monsters = fmap (move 0 (directionFactor (mDirection game))) (monsters game)
-  }
+    }
 
 directionFactor
   :: Direction
@@ -114,10 +122,13 @@ getLowestPosition = foldr minPos 3000
 handleKeys
   :: Gloss.Event -- ^ keyEvent
   -> Game -- ^ current game state
-  -> Game -- ^ Game updated
-handleKeys (Gloss.EventKey (Gloss.SpecialKey Gloss.KeyLeft) Gloss.Down _ _) game = moveSpaceship (-10) game
-handleKeys (Gloss.EventKey (Gloss.SpecialKey Gloss.KeyRight) Gloss.Down _ _) game = moveSpaceship 10 game
-handleKeys _ game = game
+  -> IO Game -- ^ Game updated
+handleKeys (Gloss.EventKey (Gloss.SpecialKey Gloss.KeyLeft) Gloss.Down _ _) game = do
+  return $ moveSpaceship (-10) game
+handleKeys (Gloss.EventKey (Gloss.SpecialKey Gloss.KeyRight) Gloss.Down _ _) game = do
+  return $ moveSpaceship 10 game
+handleKeys _ game = do
+  return $ game
 
 -- Hint: pattern-match on event key parameter (see Gloss documentation).
 
@@ -126,12 +137,13 @@ handleKeys _ game = game
 -- | Render the 'Game' into a displayable 'Gloss.Picture'.
 renderGame
   :: Game -- ^ The game state to render
-  -> Gloss.Picture -- ^ A picture of this game state
-renderGame game = Gloss.pictures
-  [ renderBackground (library game)
-  , renderSpaceship (library game) (spaceship game)
-  , renderMonsters (library game) (monsters game)
-  ]
+  -> IO Gloss.Picture -- ^ A picture of this game state
+renderGame game = do
+  return $ Gloss.pictures
+    [ renderBackground (library game)
+    , renderSpaceship (library game) (spaceship game)
+    , renderMonsters (library game) (monsters game)
+    ]
 
 -- | Render the background image.
 renderBackground
