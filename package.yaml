@@ -27,6 +27,8 @@ dependencies:
 - bert 
 - bytestring
 - binary
+- stm
+- async
 
 library:
   source-dirs: src

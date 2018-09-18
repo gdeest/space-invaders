@@ -72,8 +72,9 @@ update second game =
 getConnection Game{ connection = s } = s
 
 sendState state = do
+  let Game{ spaceship = ship, monsters = m } = state
   s <- getConnection state
-  Connector.sendData s "test"
+  Connector.sendData s (ship, m)
 
 move
   :: Float
